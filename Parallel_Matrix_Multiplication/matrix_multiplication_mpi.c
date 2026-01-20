@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define N 10 // Matrix size (NxN)
+#define N 500 // Matrix size (NxN)
 
 void print_matrix(const char *name, double *M, int rows, int cols) {
     printf("%s:\n", name);
@@ -15,7 +15,19 @@ void print_matrix(const char *name, double *M, int rows, int cols) {
     printf("\n");
 }
 
+void serial_matmul(double *A, double *B, double *C, int n) {
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            C[i*n + j] = 0.0;
+            for (int k = 0; k < n; k++) {
+                C[i*n + j] += A[i*n + k] * B[k*n + j];
+            }
+        }
+    }
+}
+
 double start_time, end_time;
+double serial_start, serial_end;
 
 int main(int argc, char *argv[]) {
 	int rank, size;
@@ -30,6 +42,9 @@ int main(int argc, char *argv[]) {
 	static double C[N][N];
 	static double local_A[N][N]; 
 	static double local_C[N][N];
+
+	static double C_serial[N][N];
+
 	rows_per_proc=N/size;
 
 	if (rank == 0) {
@@ -47,6 +62,14 @@ int main(int argc, char *argv[]) {
 // 	}
 
 
+if (rank == 0) {
+    serial_start = MPI_Wtime();
+    serial_matmul(&A[0][0], &B[0][0], &C_serial[0][0], N);
+    serial_end = MPI_Wtime();
+
+    printf("Serial execution time: %f seconds\n",
+           serial_end - serial_start);
+}
 	// Scatter rows of A
     MPI_Scatter(A, rows_per_proc * N, MPI_DOUBLE,
                 local_A, rows_per_proc * N, MPI_DOUBLE,
