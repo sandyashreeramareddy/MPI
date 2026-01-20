@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define N 4 // Matrix size (NxN)
+#define N 10 // Matrix size (NxN)
 
 void print_matrix(const char *name, double *M, int rows, int cols) {
     printf("%s:\n", name);
@@ -15,6 +15,7 @@ void print_matrix(const char *name, double *M, int rows, int cols) {
     printf("\n");
 }
 
+double start_time, end_time;
 
 int main(int argc, char *argv[]) {
 	int rank, size;
@@ -40,10 +41,10 @@ int main(int argc, char *argv[]) {
             }
     }
 
-	if (rank == 0) {
-		print_matrix("Matrix A", &A[0][0], N, N);
-print_matrix("Matrix B", &B[0][0], N, N);
-	}
+// 	if (rank == 0) {
+// 		print_matrix("Matrix A", &A[0][0], N, N);
+// print_matrix("Matrix B", &B[0][0], N, N);
+// 	}
 
 
 	// Scatter rows of A
@@ -55,6 +56,7 @@ print_matrix("Matrix B", &B[0][0], N, N);
     MPI_Bcast(B, N * N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 			
 
+	start_time = MPI_Wtime();
 	// Compute local matrix multiplication
     for (int i = 0; i < rows_per_proc; i++) {
         for (int j = 0; j < N; j++) {
@@ -64,18 +66,21 @@ print_matrix("Matrix B", &B[0][0], N, N);
         }
     }
 
+	end_time = MPI_Wtime();
+	if (rank == 0) {
+    printf("Time taken for parallel matrix multiplication: %f seconds\n",
+           end_time - start_time);
+}
+
 	// Gather results
     MPI_Gather(local_C, rows_per_proc * N, MPI_DOUBLE,
                C, rows_per_proc * N, MPI_DOUBLE,
                0, MPI_COMM_WORLD);
 
-	if (rank == 0) {
-    print_matrix("Matrix C = A x B", &C[0][0], N, N);
-}
 		   
-	if (rank == 0) {
-        printf("Matrix multiplication completed using %d processes.\n", size);
-    }
+	// if (rank == 0) {
+    //     printf("Matrix multiplication completed using %d processes.\n", size);
+    // }
 
 
 	MPI_Finalize();
