@@ -3,6 +3,19 @@
 #include <stdlib.h>
 
 #define N 4 // Matrix size (NxN)
+
+void print_matrix(const char *name, double *M, int rows, int cols) {
+    printf("%s:\n", name);
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            printf("%6.2f ", M[i * cols + j]);
+        }
+        printf("\n");
+    }
+    printf("\n");
+}
+
+
 int main(int argc, char *argv[]) {
 	int rank, size;
 	int rows_per_proc;
@@ -27,6 +40,12 @@ int main(int argc, char *argv[]) {
             }
     }
 
+	if (rank == 0) {
+		print_matrix("Matrix A", &A[0][0], N, N);
+print_matrix("Matrix B", &B[0][0], N, N);
+	}
+
+
 	// Scatter rows of A
     MPI_Scatter(A, rows_per_proc * N, MPI_DOUBLE,
                 local_A, rows_per_proc * N, MPI_DOUBLE,
@@ -50,6 +69,10 @@ int main(int argc, char *argv[]) {
                C, rows_per_proc * N, MPI_DOUBLE,
                0, MPI_COMM_WORLD);
 
+	if (rank == 0) {
+    print_matrix("Matrix C = A x B", &C[0][0], N, N);
+}
+		   
 	if (rank == 0) {
         printf("Matrix multiplication completed using %d processes.\n", size);
     }
